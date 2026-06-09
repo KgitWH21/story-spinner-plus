@@ -9,7 +9,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'fallback-dev-key')
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1'] + [
+    h.strip() for h in os.getenv('ALLOWED_HOSTS', '').split(',') if h.strip()
+]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -27,6 +29,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -105,6 +108,8 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 DATA_DIR = BASE_DIR / 'data'

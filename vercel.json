@@ -1,0 +1,8 @@
+{
+  "buildCommand": "cd story_spinner_plus-vite && npm install && npm run build",
+  "outputDirectory": "story_spinner_plus-vite/dist",
+  "framework": null,
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
