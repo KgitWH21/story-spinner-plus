@@ -44,15 +44,18 @@ export default function SpinnerWheel({ wedges, rotation, isSpinning }) {
   const idleAngleRef = useRef(0)
   const rafRef = useRef(null)
   const lastTimeRef = useRef(null)
+  const hasSpunRef = useRef(false)
 
-  // Idle animation — runs when not spinning
+  // Idle animation — runs on initial load only; stops permanently after first spin
   useEffect(() => {
     if (isSpinning) {
+      hasSpunRef.current = true
       cancelAnimationFrame(rafRef.current)
       lastTimeRef.current = null
-      // Actual spin transform is set below via the rotation effect
       return
     }
+
+    if (hasSpunRef.current) return   // wheel landed — stay still
 
     const base = -22.5 + rotation
 
