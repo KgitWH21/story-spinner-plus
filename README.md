@@ -57,3 +57,7 @@ Tap **Sign In** in the top-right corner. You can create a free account or log in
 ---
 
 *Story Spinner+ — made for people who make things.*
+
+---
+
+Created by [HAC Studios](https://keithhayden.net/)
