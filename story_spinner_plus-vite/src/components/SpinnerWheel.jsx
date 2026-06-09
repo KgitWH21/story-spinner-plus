@@ -39,7 +39,7 @@ const FALLBACK_LABELS = [
 
 const IDLE_DEG_PER_SEC = 12
 
-export default function SpinnerWheel({ wedges, rotation, isSpinning }) {
+export default function SpinnerWheel({ wedges = [], rotation, isSpinning }) {
   const svgRef = useRef(null)
   const idleAngleRef = useRef(0)
   const rafRef = useRef(null)

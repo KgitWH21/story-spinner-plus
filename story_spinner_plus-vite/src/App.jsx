@@ -131,7 +131,10 @@ export default function App() {
             setPendingSpin({ mode, result: data.result })
             setShowOverlay(true)
           })
-          .catch(console.error)
+          .catch((err) => {
+            console.error(err)
+            setToastMsg('Could not load result — check your connection and try again.')
+          })
           .finally(() => setIsSpinning(false))
       }
     }, 4100)
@@ -237,7 +240,7 @@ export default function App() {
         isOpen={showShuffle}
         onClose={() => setShowShuffle(false)}
         mode={mode}
-        onWheelUpdate={setCustomWedges}
+        onWheelUpdate={(ws) => setCustomWedges(Array.isArray(ws) ? ws : [])}
       />
 
       <Toast message={toastMsg} onDone={() => setToastMsg('')} />
