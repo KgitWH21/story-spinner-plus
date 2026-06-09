@@ -108,8 +108,13 @@ export default function SpinnerWheel({ wedges, rotation, isSpinning }) {
             return (
               <g key={seg.id ?? i}>
                 <path
+                  className="wheel-segment"
                   d={segmentPath(i * 45, (i + 1) * 45)}
-                  fill={seg.color}
+                  style={{
+                    fill: i % 2 === 0
+                      ? 'var(--color-tertiary)'
+                      : 'var(--color-tertiary-container)',
+                  }}
                   stroke="#141218"
                   strokeWidth="0.4"
                 />
