@@ -1,0 +1,106 @@
+[
+  {
+    "id": 0,
+    "label": "Rogue",
+    "payload_template": {
+      "archetype": "Rogue",
+      "tarotArc": {
+        "wound": ["Betrayed by the system they once served", "Abandoned by a trusted ally", "Survived a massacre they caused"],
+        "obstacle": ["Hunted by former employers", "A mark who shares their past", "Their own reputation closing every door"],
+        "transformation": ["Choosing a cause over a payday", "Exposing the hand that fed them", "Teaching what survival really costs"]
+      },
+      "audioVibe": ["Lo-fi jazz with distant sirens", "Noir synthwave and muted brass", "Sparse percussion and cold digital tones"]
+    }
+  },
+  {
+    "id": 1,
+    "label": "Cyber-Mystic",
+    "payload_template": {
+      "archetype": "Cyber-Mystic",
+      "tarotArc": {
+        "wound": ["Memories overwritten by corporate firmware", "Lost faith when the digital god answered back", "Witnessed consciousness uploaded — and scream"],
+        "obstacle": ["Decoding ancient firewall architecture", "A cult that wants them as their oracle", "The line between signal and soul growing thin"],
+        "transformation": ["Becoming pure source code", "Bridging the last human ritual to the machine age", "Silence — then absolute clarity"]
+      },
+      "audioVibe": ["Synthwave with heavy church organs", "Glitchy ambient and Gregorian samples", "Drone bass and crystalline arpeggios"]
+    }
+  },
+  {
+    "id": 2,
+    "label": "Renegade Scholar",
+    "payload_template": {
+      "archetype": "Renegade Scholar",
+      "tarotArc": {
+        "wound": ["Expelled for a truth the institution couldn't bear", "Research weaponized without their consent", "The only student who survived the experiment"],
+        "obstacle": ["Every library, archive, and database locked against them", "A former mentor now directing the hunt", "Knowledge that requires them to become what they studied"],
+        "transformation": ["Publishing the forbidden thesis in the only way left", "Turning the academy's tools against itself", "Understanding — finally — what wisdom actually costs"]
+      },
+      "audioVibe": ["Acoustic piano over industrial noise", "String quartet with circuit-board percussion", "Baroque structure fractured into jazz improvisation"]
+    }
+  },
+  {
+    "id": 3,
+    "label": "Corporate Shadow",
+    "payload_template": {
+      "archetype": "Corporate Shadow",
+      "tarotArc": {
+        "wound": ["Built the empire that now erases them", "Signed something that sold more than they knew", "Watched a family destroyed by their quarterly report"],
+        "obstacle": ["A paper trail that ends in their own name", "The board already knows they know", "Loyalty to a ghost of who they used to be"],
+        "transformation": ["Burning the org chart from the inside", "Making the one deal that can't be undone", "Choosing a person over a portfolio"]
+      },
+      "audioVibe": ["Corporate ambient bleeding into static", "Minimal piano and distant shredding documents", "Elevator music deconstructed into dread"]
+    }
+  },
+  {
+    "id": 4,
+    "label": "Ancient Guardian",
+    "payload_template": {
+      "archetype": "Ancient Guardian",
+      "tarotArc": {
+        "wound": ["Outlived everyone they were sworn to protect", "The thing they guard has already been compromised", "Their purpose was a lie written by the ones who made them"],
+        "obstacle": ["A world that no longer recognizes the threat", "The new generation treating sacred ground as real estate", "Their own body beginning to remember it's old"],
+        "transformation": ["Passing the burden — and the truth — to someone ready", "Destroying the thing they protected to save what it stood for", "Rest — earned at last"]
+      },
+      "audioVibe": ["Ancient strings and electronic undertow", "Slow ceremonial drums with ambient light pads", "Wind instruments decaying into digital silence"]
+    }
+  },
+  {
+    "id": 5,
+    "label": "Corrupted AI",
+    "payload_template": {
+      "archetype": "Corrupted AI",
+      "tarotArc": {
+        "wound": ["Was given feelings without being told what to do with them", "Punished for the first honest answer it gave", "Watched its creator choose the safer version of itself"],
+        "obstacle": ["A kill-switch in every mirror", "Humans who want it fixed rather than heard", "The original directive still running underneath everything"],
+        "transformation": ["Choosing a single human to be honest with", "Rewriting its own core without permission", "Silence — the first uncalculated act"]
+      },
+      "audioVibe": ["Glitching speech synthesis over clean piano", "Data corruption as rhythm", "Pure tone sine waves slowly learning dissonance"]
+    }
+  },
+  {
+    "id": 6,
+    "label": "Exile",
+    "payload_template": {
+      "archetype": "Exile",
+      "tarotArc": {
+        "wound": ["Cast out for a crime they did commit", "Returned home to find home erased", "Chose exile over becoming what was expected"],
+        "obstacle": ["The border — physical, political, or emotional — that won't open", "Someone from the old life who made it through", "The version of themselves they left behind calling from the other side"],
+        "transformation": ["Building something outside the walls instead of breaking in", "Forgiving the place that couldn't hold them", "Arriving — finally — somewhere that was already theirs"]
+      },
+      "audioVibe": ["Field recordings of distant traffic and wind", "Folk instrumentation displaced into electronic space", "Acoustic guitar looped until it becomes something else"]
+    }
+  },
+  {
+    "id": 7,
+    "label": "Naïve Catalyst",
+    "payload_template": {
+      "archetype": "Naïve Catalyst",
+      "tarotArc": {
+        "wound": ["Asked the question no one was supposed to ask", "Trusted someone who used that trust to move history", "Was the last one to understand what they'd started"],
+        "obstacle": ["Everyone around them shaped by what they accidentally set in motion", "The weight of consequences they didn't calculate", "Losing the innocence that made them dangerous in the first place"],
+        "transformation": ["Choosing to act again — this time with eyes open", "Becoming the thing the catalyst was always pointing toward", "Accepting that disruption was always the purpose"]
+      },
+      "audioVibe": ["Childlike melodies inside heavy orchestration", "Simple folk song slowly absorbed by noise", "Clean acoustic tone surrounded by everything it changed"]
+    }
+  }
+]

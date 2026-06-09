@@ -1,0 +1,27 @@
+# Python
+backend/venv/
+backend_venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+*.env
+
+# Node
+node_modules/
+story_spinner_plus-vite/node_modules/
+story_spinner_plus-vite/dist/
+story_spinner_plus-vite/.vite/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Claude
+.claude/
