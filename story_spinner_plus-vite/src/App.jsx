@@ -204,8 +204,7 @@ export default function App() {
             onClick={handleSpin}
             disabled={isSpinning}
             className="px-10 py-3 md:px-14 md:py-4 rounded-full font-bold tracking-wider text-sm md:text-base uppercase hover:opacity-90 disabled:opacity-50 active:scale-95 transition-all"
-            style={{ backgroundColor: '#e05c5c', color: '#fff' }}
-            style={{ fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.12em' }}
+            style={{ backgroundColor: '#e05c5c', color: '#fff', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.12em' }}
           >
             {isSpinning ? 'Spinning…' : 'SPIN!'}
           </button>
