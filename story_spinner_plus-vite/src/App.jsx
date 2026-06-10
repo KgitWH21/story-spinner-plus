@@ -7,7 +7,7 @@ import ShuffleDrawer from './components/ShuffleDrawer'
 import LibraryView from './components/LibraryView'
 import AuthModal from './components/AuthModal'
 import Toast from './components/Toast'
-import { getMatrix, generateSpin, getMe } from './api/client'
+import { getMatrix, generateSpin, getMe, getWheelSet } from './api/client'
 
 const MODE_PROMPTS = {
   character: 'Spin up a character!',
@@ -91,6 +91,14 @@ export default function App() {
       .then(({ data }) => setWedges(data.wedges))
       .catch(console.error)
   }, [mode])
+
+  // On first load, seed the character wheel with random story elements so every
+  // visit feels different. Runs once only — mode switches use the standard matrix.
+  useEffect(() => {
+    getWheelSet('character')
+      .then(({ data }) => setCustomWedges(Array.isArray(data.wedges) ? data.wedges : []))
+      .catch(console.error)
+  }, [])
 
   // The active wedge set shown on the wheel
   const activeWedges = customWedges.length === 8 ? customWedges : wedges
