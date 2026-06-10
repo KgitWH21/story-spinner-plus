@@ -1,6 +1,7 @@
 from pathlib import Path
 from datetime import timedelta
 import os
+import dj_database_url
 from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).resolve().parent.parent / '.env')
@@ -58,26 +59,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
-# Database — SQLite by default; switch to postgres by changing DB_ENGINE in .env
-_db_engine = os.getenv('DB_ENGINE', 'django.db.backends.sqlite3')
-if _db_engine == 'django.db.backends.sqlite3':
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / os.getenv('DB_NAME', 'db.sqlite3'),
-        }
-    }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': _db_engine,
-            'NAME': os.getenv('DB_NAME', 'story_spinner_db'),
-            'USER': os.getenv('DB_USER', 'spinner_user'),
-            'PASSWORD': os.getenv('DB_PASSWORD', 'spinner_pass'),
-            'HOST': os.getenv('DB_HOST', '127.0.0.1'),
-            'PORT': os.getenv('DB_PORT', '5432'),
-        }
-    }
+DATABASES = {
+    'default': dj_database_url.config(
+        default=os.environ.get('DATABASE_URL'),
+        conn_max_age=600,
+        ssl_require=True,
+    )
+}
 
 AUTH_USER_MODEL = 'accounts.User'
 
