@@ -95,6 +95,70 @@ export default function App() {
   // The active wedge set shown on the wheel
   const activeWedges = customWedges.length === 8 ? customWedges : wedges
 
+  // Drag-to-spin: called by SpinnerWheel with angular velocity (deg/sec) and the
+  // wheel's current visual angle when the user releases.
+  const handleDragRelease = useCallback((velocity, visualAngle) => {
+    if (isSpinning) return
+
+    const absVel = Math.abs(velocity)
+    if (absVel < 50) return // too slow — SpinnerWheel already snapped back
+
+    setIsSpinning(true)
+    setShowOverlay(false)
+    setIsFlipped(false)
+
+    // Physics: coasting distance = v² / (2a)
+    const coastDeg = (absVel * absVel) / (2 * 300)
+    const extraDeg = Math.max(2 * 360, Math.min(10 * 360, coastDeg))
+
+    // Convert visual SVG angle back to spinRotation space (undo the -22.5 offset)
+    const currentRot = visualAngle + 22.5
+    const rawTarget = currentRot + extraDeg
+
+    // Which segment lands under the pointer?
+    // When spinRotation = R, the segment at top is (8 - round(R/45)%8) % 8
+    const fullSegs = Math.round(rawTarget / 45)
+    const idx = ((8 - (fullSegs % 8)) + 8) % 8
+
+    // Snap rawTarget to the exact boundary for that segment
+    const targetMod = (360 - idx * 45) % 360
+    const currentMod = ((rawTarget % 360) + 360) % 360
+    let delta = targetMod - currentMod
+    while (delta > 22.5) delta -= 360
+    while (delta < -22.5) delta += 360
+    const newRotation = rawTarget + delta
+
+    setSpinRotation(newRotation)
+
+    setTimeout(() => {
+      if (customWedges.length === 8) {
+        const wedge = customWedges[idx]
+        const spinResult = {
+          is_element: true,
+          archetype: wedge.full_label || wedge.label,
+          category: CATEGORY_LABELS[wedge.category] || wedge.category,
+          statement: wedge.metadata?.statement || null,
+        }
+        setResult(spinResult)
+        setPendingSpin({ mode, result: spinResult })
+        setShowOverlay(true)
+        setIsSpinning(false)
+      } else {
+        generateSpin(mode, idx)
+          .then(({ data }) => {
+            setResult(data.result)
+            setPendingSpin({ mode, result: data.result })
+            setShowOverlay(true)
+          })
+          .catch((err) => {
+            console.error(err)
+            setToastMsg('Could not load result — check your connection and try again.')
+          })
+          .finally(() => setIsSpinning(false))
+      }
+    }, 4100)
+  }, [isSpinning, mode, customWedges])
+
   const handleSpin = useCallback(() => {
     if (isSpinning) return
     setIsSpinning(true)
@@ -194,20 +258,25 @@ export default function App() {
         <ModeToggle mode={mode} onModeChange={handleModeChange} />
 
         <p
-          className="text-xl md:text-3xl font-bold text-center px-4 mb-1 mode-transition"
+          className="text-2xl md:text-3xl font-bold text-center px-4 mb-1 mode-transition"
           style={{ fontFamily: "'Noto Serif', serif", color: 'var(--color-tertiary)' }}
         >
           {MODE_PROMPTS[mode]}
         </p>
 
-        <SpinnerWheel wedges={activeWedges} rotation={spinRotation} isSpinning={isSpinning} />
+        <SpinnerWheel
+          wedges={activeWedges}
+          rotation={spinRotation}
+          isSpinning={isSpinning}
+          onDragRelease={handleDragRelease}
+        />
 
         <div className="flex items-center gap-3 mt-4">
           <button
             onClick={handleSpin}
             disabled={isSpinning}
-            className="px-10 py-3 md:px-14 md:py-4 rounded-full font-bold tracking-wider text-sm md:text-base uppercase hover:opacity-90 disabled:opacity-50 active:scale-95 transition-all"
-            style={{ backgroundColor: '#e05c5c', color: '#fff', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.12em' }}
+            className={`spin-btn px-12 py-4 md:px-14 md:py-4 rounded-full font-bold tracking-wider text-base md:text-lg uppercase active:scale-95 transition-transform${isSpinning ? ' opacity-60' : ''}`}
+            style={{ color: '#fff', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.12em' }}
           >
             {isSpinning ? 'Spinning…' : 'SPIN!'}
           </button>
@@ -215,9 +284,9 @@ export default function App() {
             onClick={() => setShowShuffle(true)}
             disabled={isSpinning}
             title="Shuffle story elements"
-            className="flex items-center justify-center w-11 h-11 md:w-14 md:h-14 rounded-full bg-surface-container border border-outline-variant text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface mode-transition disabled:opacity-40 active:scale-95 transition-transform"
+            className="flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full bg-surface-container border border-outline-variant text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface mode-transition disabled:opacity-40 active:scale-95 transition-transform"
           >
-            <span className="material-symbols-outlined md:text-2xl" style={{ fontSize: 20 }}>shuffle</span>
+            <span className="material-symbols-outlined md:text-2xl" style={{ fontSize: 22 }}>shuffle</span>
           </button>
         </div>
       </main>
