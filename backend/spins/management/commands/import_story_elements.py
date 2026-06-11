@@ -14,9 +14,27 @@ MUSIC_FIELD_CATEGORIES = [
     ('melodyIdea', 'music.melody_idea'),
 ]
 
+# Nested sections in character_elements.json to import as character.* categories
+CHARACTER_NESTED = [
+    ('personality', 'traits',          'character.personality_traits'),
+    ('personality', 'flaws',           'character.flaws'),
+    ('personality', 'motivations',     'character.motivations'),
+    ('background',  'occupation',      'character.occupation'),
+    ('background',  'homeland',        'character.homeland'),
+    ('abilities',   'skills',          'character.skills'),
+    ('abilities',   'special_abilities', 'character.special_abilities'),
+]
+
+# Top-level list keys in character_elements.json to import as character.* categories
+CHARACTER_TOP_LEVEL = [
+    ('CHARACTER_SPEECH',           'character.speech'),
+    ('CHARACTER_NATIONAL_HERITAGE','character.heritage'),
+    ('PRIMARY_TRAUMATIC_EVENT',    'character.trauma'),
+]
+
 
 class Command(BaseCommand):
-    help = 'Import story_elements.json and music_archetypes.json into the StoryElement table'
+    help = 'Import story_elements.json, music_archetypes.json, and character_elements.json into the StoryElement table'
 
     def add_arguments(self, parser):
         parser.add_argument('--clear', action='store_true', help='Clear existing records first')
@@ -62,6 +80,22 @@ class Command(BaseCommand):
                         label=value,
                         metadata={'archetype': archetype['label']},
                     ))
+
+        # --- Character elements from character_elements.json ---
+        char_path = settings.DATA_DIR / 'character_elements.json'
+        with open(char_path) as f:
+            char_data = json.load(f)
+
+        for top_key, sub_key, category in CHARACTER_NESTED:
+            for item in char_data.get(top_key, {}).get(sub_key, []):
+                label = item if isinstance(item, str) else str(item)
+                bulk.append(StoryElement(category=category, label=label))
+
+        for json_key, category in CHARACTER_TOP_LEVEL:
+            for item in char_data.get(json_key, []):
+                label = item if isinstance(item, str) else str(item)
+                if label and label.lower() != 'none':
+                    bulk.append(StoryElement(category=category, label=label))
 
         StoryElement.objects.bulk_create(bulk)
         self.stdout.write(self.style.SUCCESS(

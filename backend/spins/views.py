@@ -194,9 +194,14 @@ class ElementShuffleView(APIView):
 # Categories drawn when reshuffling the wheel for each mode
 MODE_WHEEL_CATEGORIES = {
     'character': [
-        'character.theories_of_control',
-        'character.descriptors',
-        'character.relationship',
+        'character.personality_traits',
+        'character.flaws',
+        'character.motivations',
+        'character.occupation',
+        'character.special_abilities',
+        'character.speech',
+        'character.heritage',
+        'character.trauma',
     ],
     'story': [
         'plot.archetypes',

@@ -6,4 +6,13 @@ export default defineConfig({
   build: {
     sourcemap: true,
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'https://story-spinner-api.onrender.com',
+        changeOrigin: true,
+        secure: true,
+      },
+    },
+  },
 })

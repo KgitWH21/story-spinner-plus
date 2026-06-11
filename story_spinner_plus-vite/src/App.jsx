@@ -57,7 +57,7 @@ const CATEGORY_LABELS = {
 export default function App() {
   const [mode, setMode] = useState('character')
   const [wedges, setWedges] = useState([])
-  const [customWedges, setCustomWedges] = useState([])   // set by Reshuffle; overrides wheel
+  const [customWedgesByMode, setCustomWedgesByMode] = useState({})  // per-mode; persists across mode switches
   const [isSpinning, setIsSpinning] = useState(false)
   const [spinRotation, setSpinRotation] = useState(0)
   const [result, setResult] = useState(null)
@@ -83,10 +83,11 @@ export default function App() {
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [view, setView] = useState('spinner') // 'spinner' | 'library'
 
-  // Load default matrix + update CSS vars on mode change; clear custom wedges
+  const customWedges = customWedgesByMode[mode] ?? []
+
+  // Load default matrix + update CSS vars on mode change
   useEffect(() => {
     applyModeTokens(mode)
-    setCustomWedges([])
     getMatrix(mode)
       .then(({ data }) => setWedges(data.wedges))
       .catch(console.error)
@@ -96,7 +97,11 @@ export default function App() {
   // visit feels different. Runs once only — mode switches use the standard matrix.
   useEffect(() => {
     getWheelSet('character')
-      .then(({ data }) => setCustomWedges(Array.isArray(data.wedges) ? data.wedges : []))
+      .then(({ data }) => {
+        if (Array.isArray(data.wedges)) {
+          setCustomWedgesByMode(prev => ({ ...prev, character: data.wedges }))
+        }
+      })
       .catch(console.error)
   }, [])
 
@@ -317,7 +322,7 @@ export default function App() {
         isOpen={showShuffle}
         onClose={() => setShowShuffle(false)}
         mode={mode}
-        onWheelUpdate={(ws) => setCustomWedges(Array.isArray(ws) ? ws : [])}
+        onWheelUpdate={(ws) => setCustomWedgesByMode(prev => ({ ...prev, [mode]: Array.isArray(ws) ? ws : [] }))}
       />
 
       <Toast message={toastMsg} onDone={() => setToastMsg('')} />

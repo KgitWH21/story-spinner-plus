@@ -49,12 +49,12 @@ export default function ModeToggle({ mode, onModeChange }) {
               }}
             >
               <span
-                className="material-symbols-outlined pointer-events-none"
-                style={{ fontSize: 16 }}
+                className="material-symbols-outlined pointer-events-none leading-none"
+                style={{ fontSize: 16, lineHeight: 1 }}
               >
                 {icon}
               </span>
-              {label}
+              <span className="leading-none">{label}</span>
             </button>
           )
         })}

@@ -53,7 +53,7 @@ export default function OutputOverlay({
         <div className="w-10 h-1 rounded-full bg-outline-variant" />
         <button
           onClick={onClose}
-          className="absolute right-4 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface-variant transition-colors p-1"
+          className="absolute right-4 top-[62%] -translate-y-1/2 text-outline hover:text-on-surface-variant transition-colors p-1"
           aria-label="Dismiss"
         >
           <span className="material-symbols-outlined" style={{ fontSize: 20 }}>close</span>
