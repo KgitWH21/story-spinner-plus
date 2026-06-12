@@ -191,58 +191,34 @@ class ElementShuffleView(APIView):
         return Response({'shuffle': result})
 
 
-# Categories drawn when reshuffling the wheel for each mode
-MODE_WHEEL_CATEGORIES = {
-    'character': [
-        'character.personality_traits',
-        'character.flaws',
-        'character.motivations',
-        'character.occupation',
-        'character.special_abilities',
-        'character.speech',
-        'character.heritage',
-        'character.trauma',
-    ],
-    'story': [
-        'plot.archetypes',
-        'plot.genres',
-        'plot.perspectives',
-        'plot.universal_human_questions',
-    ],
-    'music': [
-        'music.style',
-        'music.emotion',
-        'music.chord_progression',
-        'music.ambience_idea',
-    ],
-}
-
 
 class WheelSetView(APIView):
     """
     GET /api/elements/wheel-set/?mode=story
-    Returns 8 randomly sampled StoryElements from mode-appropriate categories,
-    shaped as wheel wedges. Frontend uses this to replace the default archetype wheel.
+    Returns 8 StoryElements drawn from 8 randomly-selected categories so every
+    page load produces a different mix. One element per category is chosen at
+    random after the categories themselves are randomly sampled.
     """
     permission_classes = [AllowAny]
 
     def get(self, request):
         mode = request.query_params.get('mode', 'character')
-        cats = MODE_WHEEL_CATEGORIES.get(mode, MODE_WHEEL_CATEGORIES['character'])
 
-        # Sample roughly evenly from each category so no single large category dominates
-        per_cat = 8 // len(cats)
-        remainder = 8 % len(cats)
+        # Pick 8 random categories from everything in the library
+        all_cats = list(
+            StoryElement.objects.values_list('category', flat=True).distinct()
+        )
+        if not all_cats:
+            return Response({'mode': mode, 'wedges': [], 'is_custom': True})
+
+        chosen_cats = random.sample(all_cats, min(8, len(all_cats)))
+
+        # Pick one random item from each chosen category
         picked = []
-        shuffled_cats = cats[:]
-        random.shuffle(shuffled_cats)
-        for i, cat in enumerate(shuffled_cats):
-            n = per_cat + (1 if i < remainder else 0)
+        for cat in chosen_cats:
             qs = list(StoryElement.objects.filter(category=cat))
-            if len(qs) < n:
-                picked.extend(qs)
-            else:
-                picked.extend(random.sample(qs, n))
+            if qs:
+                picked.append(random.choice(qs))
 
         random.shuffle(picked)
         wedges = [
