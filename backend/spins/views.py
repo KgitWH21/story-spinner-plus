@@ -201,12 +201,23 @@ class WheelSetView(APIView):
     """
     permission_classes = [AllowAny]
 
+    # Category prefix scoped to each mode so modes stay thematically coherent
+    MODE_PREFIXES = {
+        'character': 'character.',
+        'story': 'plot.',
+        'music': 'music.',
+    }
+
     def get(self, request):
         mode = request.query_params.get('mode', 'character')
+        prefix = self.MODE_PREFIXES.get(mode, 'character.')
 
-        # Pick 8 random categories from everything in the library
+        # Pick 8 random categories scoped to this mode's prefix
         all_cats = list(
-            StoryElement.objects.values_list('category', flat=True).distinct()
+            StoryElement.objects
+            .filter(category__startswith=prefix)
+            .values_list('category', flat=True)
+            .distinct()
         )
         if not all_cats:
             return Response({'mode': mode, 'wedges': [], 'is_custom': True})
