@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 
 const toRad = (deg) => (deg * Math.PI) / 180
 const R = 50
@@ -46,12 +46,16 @@ const FALLBACK_LABELS = [
 
 const IDLE_DEG_PER_SEC = 12
 
-export default function SpinnerWheel({ wedges = [], rotation, isSpinning, onDragRelease }) {
+const IDLE_RESUME_MS = 20_000
+
+export default function SpinnerWheel({ wedges = [], rotation, isSpinning, onDragRelease, wrapStyle }) {
   const svgRef = useRef(null)
   const idleAngleRef = useRef(0)
   const rafRef = useRef(null)
   const lastTimeRef = useRef(null)
-  const hasSpunRef = useRef(false)
+  const everSpunRef = useRef(false)
+  const idleTimerRef = useRef(null)
+  const [idleActive, setIdleActive] = useState(true)
 
   // Drag state — all refs so no re-renders mid-drag
   const isDraggingRef = useRef(false)
@@ -69,16 +73,31 @@ export default function SpinnerWheel({ wedges = [], rotation, isSpinning, onDrag
   const rotationRef = useRef(rotation)
   useEffect(() => { rotationRef.current = rotation }, [rotation])
 
-  // Idle animation — stops permanently after first spin or drag
+  // Manage idle active state: disable on spin/drag, re-enable after 20 s of inactivity
   useEffect(() => {
     if (isSpinning) {
-      hasSpunRef.current = true
+      everSpunRef.current = true
+      setIdleActive(false)
+      clearTimeout(idleTimerRef.current)
+    } else if (everSpunRef.current) {
+      clearTimeout(idleTimerRef.current)
+      idleTimerRef.current = setTimeout(() => {
+        idleAngleRef.current = 0
+        setIdleActive(true)
+      }, IDLE_RESUME_MS)
+    }
+    return () => clearTimeout(idleTimerRef.current)
+  }, [isSpinning])
+
+  // Idle animation — runs while idleActive and not spinning
+  useEffect(() => {
+    if (isSpinning || !idleActive) {
       cancelAnimationFrame(rafRef.current)
       lastTimeRef.current = null
       return
     }
-    if (hasSpunRef.current) return
 
+    idleAngleRef.current = 0
     const base = -22.5 + rotation
     const tick = (ts) => {
       if (lastTimeRef.current !== null) {
@@ -95,7 +114,7 @@ export default function SpinnerWheel({ wedges = [], rotation, isSpinning, onDrag
       cancelAnimationFrame(rafRef.current)
       lastTimeRef.current = null
     }
-  }, [isSpinning, rotation])
+  }, [isSpinning, idleActive, rotation])
 
   // Programmatic spin — CSS transition handles the animation
   useEffect(() => {
@@ -179,10 +198,12 @@ export default function SpinnerWheel({ wedges = [], rotation, isSpinning, onDrag
     if (isSpinningRef.current || !onDragReleaseRef.current) return
     if (event.cancelable) event.preventDefault()
 
-    // Kill idle animation permanently
+    // Kill idle animation; schedule resume via the isSpinning effect once drag completes
     cancelAnimationFrame(rafRef.current)
     lastTimeRef.current = null
-    hasSpunRef.current = true
+    everSpunRef.current = true
+    setIdleActive(false)
+    clearTimeout(idleTimerRef.current)
 
     isDraggingRef.current = true
 
@@ -218,7 +239,7 @@ export default function SpinnerWheel({ wedges = [], rotation, isSpinning, onDrag
         className="spinner-wheel-wrap relative"
         onMouseDown={handleDragStart}
         onTouchStart={handleDragStart}
-        style={isSpinning ? { cursor: 'default' } : undefined}
+        style={{ ...wrapStyle, ...(isSpinning ? { cursor: 'default' } : {}) }}
       >
         <svg
           ref={svgRef}

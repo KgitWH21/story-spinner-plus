@@ -31,6 +31,26 @@ class SavedSpin(models.Model):
         return f'{self.spin_type} spin by {user_label} @ {self.created_at:%Y-%m-%d}'
 
 
+class Draft(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='drafts',
+    )
+    name = models.CharField(max_length=200, default='Untitled')
+    mode = models.CharField(max_length=20, choices=SavedSpin.SPIN_TYPES, default='character')
+    elements = models.JSONField(default=dict)
+    notes = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f'{self.name} ({self.user.email})'
+
+
 class StoryElement(models.Model):
     category = models.CharField(max_length=100, db_index=True)
     label = models.CharField(max_length=600)

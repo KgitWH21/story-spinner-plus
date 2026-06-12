@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 
-function UserMenu({ email, onLibrary, onSignOut }) {
+export function UserMenu({ email, onLibrary, onSignOut }) {
   const [open, setOpen] = useState(false)
   const menuRef = useRef(null)
   const initial = email ? email[0].toUpperCase() : '?'

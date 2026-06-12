@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.conf import settings
-from .models import SavedSpin, StoryElement
+from .models import SavedSpin, StoryElement, Draft
 
 
 DATA_DIR = settings.DATA_DIR
@@ -96,6 +96,18 @@ class GenerateView(APIView):
 
         result = generate_result(archetypes[wedge_id])
         return Response({'mode': mode, 'wedge_id': wedge_id, 'result': result})
+
+
+class SpinDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        try:
+            spin = request.user.spins.get(pk=pk)
+        except SavedSpin.DoesNotExist:
+            return Response({'error': 'Not found'}, status=404)
+        spin.delete()
+        return Response(status=204)
 
 
 class SpinView(APIView):
@@ -244,3 +256,87 @@ class WheelSetView(APIView):
             for i, elem in enumerate(picked[:8])
         ]
         return Response({'mode': mode, 'wedges': wedges, 'is_custom': True})
+
+
+VALID_MODES = ('character', 'story', 'music')
+
+
+def _draft_to_dict(draft):
+    return {
+        'id': draft.id,
+        'name': draft.name,
+        'mode': draft.mode,
+        'elements': draft.elements,
+        'notes': draft.notes,
+        'created_at': draft.created_at,
+        'updated_at': draft.updated_at,
+    }
+
+
+class DraftListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        drafts = request.user.drafts.all()[:50]
+        return Response([_draft_to_dict(d) for d in drafts])
+
+    def post(self, request):
+        name = request.data.get('name', 'Untitled')
+        mode = request.data.get('mode', 'character')
+        elements = request.data.get('elements', {})
+        notes = request.data.get('notes', {})
+        if mode not in VALID_MODES:
+            return Response({'error': 'Invalid mode'}, status=400)
+        draft = Draft.objects.create(
+            user=request.user,
+            name=name,
+            mode=mode,
+            elements=elements,
+            notes=notes,
+        )
+        return Response(_draft_to_dict(draft), status=201)
+
+
+class DraftDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def _get_draft(self, request, pk):
+        try:
+            return request.user.drafts.get(pk=pk)
+        except Draft.DoesNotExist:
+            return None
+
+    def get(self, request, pk):
+        draft = self._get_draft(request, pk)
+        if not draft:
+            return Response({'error': 'Not found'}, status=404)
+        return Response(_draft_to_dict(draft))
+
+    def patch(self, request, pk):
+        draft = self._get_draft(request, pk)
+        if not draft:
+            return Response({'error': 'Not found'}, status=404)
+        update_fields = ['updated_at']
+        if 'name' in request.data:
+            draft.name = request.data['name']
+            update_fields.append('name')
+        if 'mode' in request.data:
+            if request.data['mode'] not in VALID_MODES:
+                return Response({'error': 'Invalid mode'}, status=400)
+            draft.mode = request.data['mode']
+            update_fields.append('mode')
+        if 'elements' in request.data:
+            draft.elements = request.data['elements']
+            update_fields.append('elements')
+        if 'notes' in request.data:
+            draft.notes = request.data['notes']
+            update_fields.append('notes')
+        draft.save(update_fields=update_fields)
+        return Response(_draft_to_dict(draft))
+
+    def delete(self, request, pk):
+        draft = self._get_draft(request, pk)
+        if not draft:
+            return Response({'error': 'Not found'}, status=404)
+        draft.delete()
+        return Response(status=204)

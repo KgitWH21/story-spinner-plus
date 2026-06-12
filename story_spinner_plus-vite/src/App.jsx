@@ -8,50 +8,13 @@ import LibraryView from './components/LibraryView'
 import AuthModal from './components/AuthModal'
 import Toast from './components/Toast'
 import { generateSpin, getMe, getWheelSet } from './api/client'
+import { CATEGORY_LABELS } from './lib/spinElements'
+import { applyModeTokens } from './lib/theme'
 
 const MODE_PROMPTS = {
   character: 'Spin up a character!',
   story: 'Spin a story!',
   music: 'Spin a song!',
-}
-
-const MODE_TOKENS = {
-  character: {
-    '--color-tertiary': '#e7c365',
-    '--color-tertiary-container': '#c9a74d',
-    '--color-on-tertiary': '#3e2e00',
-    '--color-pointer': '#503d00',   // deep amber — visible against both golden wheel segments
-  },
-  story: {
-    '--color-tertiary': '#52b788',
-    '--color-tertiary-container': '#40916c',
-    '--color-on-tertiary': '#1a3329',
-    '--color-pointer': '#0f3320',
-  },
-  music: {
-    '--color-tertiary': '#c77dff',
-    '--color-tertiary-container': '#9d4edd',
-    '--color-on-tertiary': '#2d0050',
-    '--color-pointer': '#1e0042',
-  },
-}
-
-function applyModeTokens(mode) {
-  const tokens = MODE_TOKENS[mode]
-  if (!tokens) return
-  const root = document.documentElement
-  Object.entries(tokens).forEach(([k, v]) => root.style.setProperty(k, v))
-}
-
-const CATEGORY_LABELS = {
-  'plot.archetypes': 'Plot Archetype',
-  'plot.genres': 'Genre',
-  'plot.perspectives': 'Perspective',
-  'plot.social_issues': 'Social Issue',
-  'plot.universal_human_questions': 'Core Question',
-  'character.descriptors': 'Character Trait',
-  'character.theories_of_control': 'Control Theory',
-  'character.relationship': 'Relationship',
 }
 
 export default function App() {
@@ -81,7 +44,7 @@ export default function App() {
   }, [])
   const [showShuffle, setShowShuffle] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
-  const [view, setView] = useState('spinner') // 'spinner' | 'library'
+  const [view, setView] = useState(() => localStorage.getItem('app_view') || 'spinner')
 
   const customWedges = customWedgesByMode[mode] ?? []
 
@@ -96,6 +59,11 @@ export default function App() {
       })
       .catch(console.error)
   }, [mode])
+
+  // Restore spinner mode colors when returning from the library
+  useEffect(() => {
+    if (view === 'spinner') applyModeTokens(mode)
+  }, [view])
 
   // The active wedge set shown on the wheel
   const activeWedges = customWedges.length === 8 ? customWedges : wedges
@@ -240,8 +208,9 @@ export default function App() {
   if (view === 'library') {
     return (
       <LibraryView
-        onBack={() => setView('spinner')}
-        onSpinNow={(type) => { setMode(type); setView('spinner') }}
+        onBack={() => { localStorage.setItem('app_view', 'spinner'); setView('spinner') }}
+        userEmail={userEmail}
+        onSignOut={handleSignOut}
       />
     )
   }
@@ -254,7 +223,7 @@ export default function App() {
       <TopAppBar
         isLoggedIn={isLoggedIn}
         userEmail={userEmail}
-        onLibrary={() => setView('library')}
+        onLibrary={() => { localStorage.setItem('app_view', 'library'); setView('library') }}
         onSignIn={() => setShowAuthModal(true)}
         onSignOut={handleSignOut}
       />

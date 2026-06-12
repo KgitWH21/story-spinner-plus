@@ -69,3 +69,14 @@ export function builderToText(builder) {
 
 export const TYPE_LABELS = { character: 'Character', story: 'Story', music: 'Music' }
 export const TYPE_ICONS  = { character: 'person', story: 'menu_book', music: 'music_note' }
+
+export const CATEGORY_LABELS = {
+  'plot.archetypes': 'Plot Archetype',
+  'plot.genres': 'Genre',
+  'plot.perspectives': 'Perspective',
+  'plot.social_issues': 'Social Issue',
+  'plot.universal_human_questions': 'Core Question',
+  'character.descriptors': 'Character Trait',
+  'character.theories_of_control': 'Control Theory',
+  'character.relationship': 'Relationship',
+}

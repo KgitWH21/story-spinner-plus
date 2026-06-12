@@ -6,7 +6,7 @@ function formatDate(iso) {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export default function SpinCard({ spin, onAdd, builderSlots }) {
+export default function SpinCard({ spin, onAdd, onDelete, builderSlots, notes = {}, onNoteClick }) {
   const [expanded, setExpanded] = useState(false)
   const elements = extractElements(spin)
   const headline = spin.payload.archetype || '—'
@@ -15,9 +15,12 @@ export default function SpinCard({ spin, onAdd, builderSlots }) {
   return (
     <div className="rounded-2xl bg-surface-container border border-outline-variant overflow-hidden">
       {/* Card header — always visible */}
-      <button
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => setExpanded(e => !e)}
-        className="w-full flex items-start justify-between px-4 py-3 text-left"
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setExpanded(v => !v) }}
+        className="w-full flex items-start justify-between px-4 py-3 text-left cursor-pointer select-none"
       >
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
@@ -37,10 +40,19 @@ export default function SpinCard({ spin, onAdd, builderSlots }) {
           </p>
           <p className="text-xs text-on-surface-variant mt-0.5">{formatDate(spin.created_at)}</p>
         </div>
-        <span className="material-symbols-outlined text-on-surface-variant flex-shrink-0 mt-1" style={{ fontSize: 20 }}>
-          {expanded ? 'expand_less' : 'expand_more'}
-        </span>
-      </button>
+        <div className="flex items-center gap-1 flex-shrink-0 mt-1">
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete?.(spin.id) }}
+            className="w-7 h-7 flex items-center justify-center rounded-full text-on-surface-variant hover:text-error hover:bg-error/10 transition-colors"
+            aria-label="Delete spin"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>delete</span>
+          </button>
+          <span className="material-symbols-outlined text-on-surface-variant" style={{ fontSize: 20 }}>
+            {expanded ? 'expand_less' : 'expand_more'}
+          </span>
+        </div>
+      </div>
 
       {/* Expanded element rows */}
       {expanded && (
@@ -56,23 +68,40 @@ export default function SpinCard({ spin, onAdd, builderSlots }) {
                   </p>
                   <p className="text-on-surface text-sm leading-snug mt-0.5">{value}</p>
                 </div>
-                <button
-                  onClick={() => onAdd(slot, value)}
-                  className={`
-                    flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium
-                    transition-colors mt-1
-                    ${alreadyAdded
-                      ? 'bg-tertiary/20 text-tertiary cursor-default'
-                      : 'bg-surface-container-high text-on-surface-variant hover:bg-tertiary hover:text-on-tertiary mode-transition'
-                    }
-                  `}
-                  disabled={alreadyAdded}
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: 12 }}>
-                    {alreadyAdded ? 'check' : 'add'}
-                  </span>
-                  {alreadyAdded ? 'Added' : 'Add'}
-                </button>
+                <div className="flex items-center gap-1 mt-1 flex-shrink-0">
+                  {onNoteClick && (
+                    <button
+                      onClick={() => onNoteClick(slot, value)}
+                      title={notes[slot] ? 'Edit note' : 'Add note'}
+                      className={`w-7 h-7 flex items-center justify-center rounded-full transition-colors ${
+                        notes[slot]
+                          ? 'text-tertiary hover:bg-tertiary/10 mode-transition'
+                          : 'text-on-surface-variant hover:bg-surface-container-high'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: 14 }}>
+                        {notes[slot] ? 'sticky_note_2' : 'note_add'}
+                      </span>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => onAdd(slot, value)}
+                    className={`
+                      flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium
+                      transition-colors
+                      ${alreadyAdded
+                        ? 'bg-tertiary/20 text-tertiary cursor-default'
+                        : 'bg-surface-container-high text-on-surface-variant hover:bg-tertiary hover:text-on-tertiary mode-transition'
+                      }
+                    `}
+                    disabled={alreadyAdded}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: 12 }}>
+                      {alreadyAdded ? 'check' : 'add'}
+                    </span>
+                    {alreadyAdded ? 'Added' : 'Add'}
+                  </button>
+                </div>
               </div>
             )
           })}

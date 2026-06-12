@@ -1,8 +1,14 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import SpinCard from './SpinCard'
 import BuilderPanel from './BuilderPanel'
-import { listSpins, listProjects, renameProject } from '../api/client'
+import SpinModal from './SpinModal'
+import NoteModal from './NoteModal'
+import ViewStoryPanel from './ViewStoryPanel'
+import { UserMenu } from './TopAppBar'
+import { listSpins, listProjects, renameProject, deleteSpin, listDrafts, createDraft, updateDraft } from '../api/client'
+import Toast from './Toast'
 import { TYPE_LABELS, TYPE_ICONS } from '../lib/spinElements'
+import { applyModeTokens } from '../lib/theme'
 
 const TYPES = ['character', 'story', 'music']
 
@@ -61,21 +67,93 @@ function ProjectNameEditor({ project, onSaved }) {
   )
 }
 
-export default function LibraryView({ onBack, onSpinNow }) {
+export default function LibraryView({ onBack, userEmail, onSignOut }) {
   const [activeType, setActiveType] = useState('character')
   const [spinsByType, setSpinsByType] = useState({ character: null, story: null, music: null })
   const [loading, setLoading] = useState(false)
   const [project, setProject] = useState(null)
   const [builder, setBuilder] = useState({})
+  const [spinModalMode, setSpinModalMode] = useState(null)
+  const [subView, setSubView] = useState('library') // 'library' | 'story'
+  const [toastMsg, setToastMsg] = useState('')
+
+  // Draft state
+  const [draftId, setDraftId] = useState(null)
+  const [draftName, setDraftName] = useState('')
+  const [notes, setNotes] = useState({})
+  const [noteSlot, setNoteSlot] = useState(null)  // { slot, value }
+
+
+  // Refs for auto-save (avoid stale closures in debounce)
+  const debounceRef = useRef(null)
+  const pendingCreateRef = useRef(false)
+  const draftIdRef = useRef(null)
+  const builderRef = useRef({})
+  const notesRef = useRef({})
+  const draftNameRef = useRef('')
+  const activeTypeRef = useRef('character')
+  const mountedRef = useRef(false)
+
+  useEffect(() => { draftIdRef.current = draftId }, [draftId])
+  useEffect(() => { builderRef.current = builder }, [builder])
+  useEffect(() => { notesRef.current = notes }, [notes])
+  useEffect(() => { draftNameRef.current = draftName }, [draftName])
+  useEffect(() => { activeTypeRef.current = activeType }, [activeType])
 
   const spins = spinsByType[activeType]
 
-  // Load the user's default project for the rename header
+  // Load most recent draft on mount
+  useEffect(() => {
+    listDrafts()
+      .then(({ data }) => {
+        if (data.length > 0) {
+          const d = data[0]
+          setDraftId(d.id)
+          setDraftName(d.name || '')
+          setBuilder(d.elements || {})
+          setNotes(d.notes || {})
+        }
+      })
+      .catch(console.error)
+      .finally(() => { mountedRef.current = true })
+  }, [])
+
+  // Auto-save: debounced PATCH (or create) whenever builder/notes/draftName change
+  const scheduleSave = useCallback(() => {
+    if (!mountedRef.current) return
+    clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(async () => {
+      const payload = {
+        name: draftNameRef.current || 'Untitled',
+        mode: activeTypeRef.current,
+        elements: builderRef.current,
+        notes: notesRef.current,
+      }
+      if (draftIdRef.current) {
+        updateDraft(draftIdRef.current, payload).catch(console.error)
+      } else if (!pendingCreateRef.current) {
+        pendingCreateRef.current = true
+        createDraft(payload)
+          .then(({ data }) => { setDraftId(data.id); draftIdRef.current = data.id })
+          .catch(console.error)
+          .finally(() => { pendingCreateRef.current = false })
+      }
+    }, 800)
+  }, [])
+
+  useEffect(() => { scheduleSave() }, [builder])
+  useEffect(() => { scheduleSave() }, [notes])
+  useEffect(() => { scheduleSave() }, [draftName])
+
+  // Load project name for header
   useEffect(() => {
     listProjects()
       .then(({ data }) => { if (data.length > 0) setProject(data[0]) })
       .catch(console.error)
   }, [])
+
+  // Sync mode colors to the active tab
+  useEffect(() => { applyModeTokens(activeType) }, [activeType])
 
   // Lazy-load spins per tab
   useEffect(() => {
@@ -89,8 +167,46 @@ export default function LibraryView({ onBack, onSpinNow }) {
 
   const handleAdd = (slot, value) => setBuilder(prev => ({ ...prev, [slot]: value }))
   const handleRemove = (slot) => setBuilder(prev => { const n = { ...prev }; delete n[slot]; return n })
+  const handleDelete = (id) => {
+    deleteSpin(id)
+      .then(() => {
+        setSpinsByType(prev => ({
+          ...prev,
+          [activeType]: (prev[activeType] || []).filter(s => s.id !== id),
+        }))
+      })
+      .catch((err) => {
+        const status = err?.response?.status
+        console.error('Delete failed', status, err)
+        setToastMsg(`Could not delete (${status ?? 'network error'}) — please try again.`)
+      })
+  }
+
+  // Note modal handlers
+  const handleNoteClick = (slot, value) => setNoteSlot({ slot, value: value || '' })
+  const handleNoteSave = (text) => {
+    setNotes(prev => ({ ...prev, [noteSlot.slot]: text }))
+    setNoteSlot(null)
+  }
+  const handleNoteDelete = () => {
+    setNotes(prev => { const n = { ...prev }; delete n[noteSlot.slot]; return n })
+    setNoteSlot(null)
+  }
 
   const hasSpins = spins && spins.length > 0
+
+  if (subView === 'story') {
+    return (
+      <ViewStoryPanel
+        draftName={draftName}
+        onDraftNameChange={setDraftName}
+        builder={builder}
+        notes={notes}
+        mode={activeType}
+        onBack={() => setSubView('library')}
+      />
+    )
+  }
 
   return (
     <div className="flex flex-col h-screen bg-background text-on-surface"
@@ -114,10 +230,7 @@ export default function LibraryView({ onBack, onSpinNow }) {
             onSaved={name => setProject(p => ({ ...p, name }))}
           />
         </div>
-        <span className="text-on-surface-variant text-xs font-medium tracking-widest uppercase flex-shrink-0"
-          style={{ fontFamily: "'Hanken Grotesk', sans-serif" }}>
-          HAC Studios
-        </span>
+        <UserMenu email={userEmail} onSignOut={onSignOut} />
       </header>
 
       {/* Type tabs */}
@@ -156,24 +269,31 @@ export default function LibraryView({ onBack, onSpinNow }) {
               No saved {TYPE_LABELS[activeType].toLowerCase()} spins yet.
             </p>
             <button
-              onClick={() => onSpinNow(activeType)}
+              onClick={() => setSpinModalMode(activeType)}
               className="mt-1 px-5 py-2 rounded-full bg-tertiary text-on-tertiary text-sm font-bold mode-transition"
               style={{ fontFamily: "'Space Grotesk', sans-serif" }}
             >
-              Spin Now
+              Spin {TYPE_LABELS[activeType]}!
             </button>
           </div>
         )}
 
         {!loading && spins && spins.map(spin => (
-          <SpinCard key={spin.id} spin={spin} onAdd={handleAdd} builderSlots={builder} />
+          <SpinCard
+            key={spin.id}
+            spin={spin}
+            onAdd={handleAdd}
+            onDelete={handleDelete}
+            builderSlots={builder}
+            notes={notes}
+            onNoteClick={handleNoteClick}
+          />
         ))}
 
-        {/* Bottom Spin! button — shown when there are spins to browse */}
         {hasSpins && (
           <div className="flex justify-center pt-2 pb-1">
             <button
-              onClick={() => onSpinNow(activeType)}
+              onClick={() => setSpinModalMode(activeType)}
               className="flex items-center gap-2 px-8 py-3 rounded-full bg-tertiary text-on-tertiary font-bold text-sm uppercase tracking-wider mode-transition hover:opacity-90 active:scale-95 transition-transform shadow-lg"
               style={{ fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.12em' }}
             >
@@ -186,8 +306,40 @@ export default function LibraryView({ onBack, onSpinNow }) {
 
       {/* Builder panel — sticky at bottom */}
       <div className="flex-shrink-0">
-        <BuilderPanel builder={builder} onRemove={handleRemove} onClear={() => setBuilder({})} />
+        <BuilderPanel
+          builder={builder}
+          onRemove={handleRemove}
+          onClear={() => setBuilder({})}
+          mode={activeType}
+          notes={notes}
+          onNoteClick={handleNoteClick}
+          draftName={draftName}
+          onDraftNameChange={setDraftName}
+          onViewStory={() => setSubView('story')}
+        />
       </div>
+
+      {spinModalMode && (
+        <SpinModal
+          mode={spinModalMode}
+          builder={builder}
+          onAdd={handleAdd}
+          onClose={() => setSpinModalMode(null)}
+        />
+      )}
+
+      {noteSlot !== null && (
+        <NoteModal
+          slot={noteSlot.slot}
+          value={noteSlot.value}
+          existingNote={notes[noteSlot.slot] || ''}
+          onSave={handleNoteSave}
+          onDelete={handleNoteDelete}
+          onClose={() => setNoteSlot(null)}
+        />
+      )}
+
+      <Toast message={toastMsg} onDone={() => setToastMsg('')} />
     </div>
   )
 }
