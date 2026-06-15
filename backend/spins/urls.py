@@ -11,4 +11,5 @@ urlpatterns = [
     path('elements/categories/', views.ElementCategoriesView.as_view(), name='element-categories'),
     path('elements/shuffle/', views.ElementShuffleView.as_view(), name='element-shuffle'),
     path('elements/wheel-set/', views.WheelSetView.as_view(), name='element-wheel-set'),
+    path('elements/search/', views.ElementSearchView.as_view(), name='element-search'),
 ]

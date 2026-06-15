@@ -5,6 +5,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.conf import settings
+from pgvector.django import CosineDistance
+from openai import OpenAI
 from .models import SavedSpin, StoryElement, Draft
 
 
@@ -340,3 +342,64 @@ class DraftDetailView(APIView):
             return Response({'error': 'Not found'}, status=404)
         draft.delete()
         return Response(status=204)
+
+
+class ElementSearchView(APIView):
+    """
+    GET /api/elements/search/?q=isolation+and+betrayal&mode=story&limit=8
+
+    Embeds the query with OpenAI, then uses pgvector cosine similarity to find
+    the nearest StoryElements. Returns results in the same shape as wheel-set
+    wedges so the frontend can swap them in directly.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        query = request.query_params.get('q', '').strip()
+        mode  = request.query_params.get('mode', 'character')
+        limit = min(int(request.query_params.get('limit', 8)), 20)
+
+        if not query:
+            return Response({'error': 'q parameter required'}, status=400)
+
+        api_key = settings.OPENAI_API_KEY
+        if not api_key:
+            return Response({'error': 'Search not configured'}, status=503)
+
+        # Embed the search query using the same model as the batch job
+        client = OpenAI(api_key=api_key)
+        response = client.embeddings.create(
+            model='text-embedding-3-small',
+            input=query,
+        )
+        query_vector = response.data[0].embedding
+
+        # Mode prefix scopes results so a story search doesn't return music elements
+        mode_prefixes = {
+            'character': 'character.',
+            'story':     'plot.',
+            'music':     'music.',
+        }
+        prefix = mode_prefixes.get(mode, 'character.')
+
+        # Order by cosine distance (lower = more similar), skip unembedded rows
+        results = (
+            StoryElement.objects
+            .filter(category__startswith=prefix, embedding__isnull=False)
+            .order_by(CosineDistance('embedding', query_vector))[:limit]
+        )
+
+        ALTERNATING_COLORS = ['#e7c365', '#c9a74d']
+        wedges = [
+            {
+                'id': i,
+                'label': el.label[:22] + '…' if len(el.label) > 22 else el.label,
+                'full_label': el.label,
+                'color': ALTERNATING_COLORS[i % 2],
+                'category': el.category,
+                'metadata': el.metadata,
+            }
+            for i, el in enumerate(results)
+        ]
+
+        return Response({'mode': mode, 'query': query, 'wedges': wedges})

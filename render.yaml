@@ -17,3 +17,5 @@ services:
         value: story-spinner-api.onrender.com
       - key: CORS_ALLOWED_ORIGINS
         value: https://story-spinner-plus.vercel.app
+      - key: ANTHROPIC_API_KEY
+        sync: false

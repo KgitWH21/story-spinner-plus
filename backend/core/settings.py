@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'accounts',
     'projects',
     'spins',
+    'pgvector.django',
 ]
 
 MIDDLEWARE = [
@@ -105,3 +106,4 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 DATA_DIR = BASE_DIR / 'data'
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')

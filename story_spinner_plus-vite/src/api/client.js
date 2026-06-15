@@ -70,5 +70,7 @@ export const shuffleElements = (categories) => {
   return api.get(`/api/elements/shuffle/${param}`)
 }
 export const getWheelSet = (mode) => api.get(`/api/elements/wheel-set/?mode=${mode}`)
+export const searchElements = (query, mode) =>
+  api.get(`/api/elements/search/?q=${encodeURIComponent(query)}&mode=${mode}`)
 
 export default api

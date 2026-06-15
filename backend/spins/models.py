@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from pgvector.django import VectorField
 
 
 class SavedSpin(models.Model):
@@ -55,6 +56,7 @@ class StoryElement(models.Model):
     category = models.CharField(max_length=100, db_index=True)
     label = models.CharField(max_length=600)
     metadata = models.JSONField(null=True, blank=True)
+    embedding = VectorField(dimensions=1536, null=True, blank=True)
 
     class Meta:
         ordering = ['category', 'id']

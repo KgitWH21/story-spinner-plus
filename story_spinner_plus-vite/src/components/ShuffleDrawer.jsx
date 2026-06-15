@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
-import { shuffleElements, getWheelSet } from '../api/client'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { shuffleElements, getWheelSet, searchElements } from '../api/client'
 
 const CATEGORY_LABELS = {
   'plot.archetypes': 'Plot Archetype',
@@ -73,9 +73,14 @@ function ElementChip({ category, item }) {
 export default function ShuffleDrawer({ isOpen, onClose, mode, onWheelUpdate }) {
   const [shuffle, setShuffle] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState(null)
+  const [searchLoading, setSearchLoading] = useState(false)
+  const inputRef = useRef(null)
 
-  // useCallback ensures fetchBoth always captures the current mode value
   const fetchBoth = useCallback(() => {
+    setSearchResults(null)
+    setSearchQuery('')
     setShuffle(null)
     setLoading(true)
     Promise.all([
@@ -90,10 +95,32 @@ export default function ShuffleDrawer({ isOpen, onClose, mode, onWheelUpdate }) 
       .finally(() => setLoading(false))
   }, [mode, onWheelUpdate])
 
-  // Single effect: re-run whenever the drawer opens OR the mode changes while open
   useEffect(() => {
     if (isOpen) fetchBoth()
-  }, [isOpen, mode])  // fetchBoth intentionally excluded — mode is the real trigger
+  }, [isOpen, mode])
+
+  const handleSearch = async (e) => {
+    e.preventDefault()
+    const q = searchQuery.trim()
+    if (!q) return
+    setSearchLoading(true)
+    setSearchResults(null)
+    try {
+      const { data } = await searchElements(q, mode)
+      setSearchResults(data.wedges)
+      onWheelUpdate(data.wedges)  // load results directly onto the wheel
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setSearchLoading(false)
+    }
+  }
+
+  const handleClearSearch = () => {
+    setSearchResults(null)
+    setSearchQuery('')
+    fetchBoth()
+  }
 
   return (
     <>
@@ -134,30 +161,86 @@ export default function ShuffleDrawer({ isOpen, onClose, mode, onWheelUpdate }) 
           </button>
         </div>
 
+        {/* Search input */}
+        <form onSubmit={handleSearch} className="px-4 pb-2 flex gap-2">
+          <div className="relative flex-1">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none" style={{ fontSize: 16 }}>
+              search
+            </span>
+            <input
+              ref={inputRef}
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder={`Search ${mode} elements…`}
+              className="w-full pl-9 pr-3 py-2 rounded-full bg-surface-container border border-outline-variant text-on-surface text-sm placeholder:text-on-surface-variant focus:outline-none focus:border-tertiary mode-transition transition-colors"
+              style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={!searchQuery.trim() || searchLoading}
+            className="px-4 py-2 rounded-full bg-tertiary text-on-tertiary text-sm font-bold mode-transition hover:opacity-90 disabled:opacity-40"
+            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+          >
+            {searchLoading ? '…' : 'Go'}
+          </button>
+          {searchResults && (
+            <button
+              type="button"
+              onClick={handleClearSearch}
+              className="px-3 py-2 rounded-full bg-surface-container-high text-on-surface-variant text-sm hover:text-on-surface transition-colors"
+              title="Clear search"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 16 }}>close</span>
+            </button>
+          )}
+        </form>
+
         {/* Cards */}
-        <div className="px-4 pb-3 flex flex-col gap-2" style={{ maxHeight: '52vh', overflowY: 'auto' }}>
-          {loading && (
+        <div className="px-4 pb-3 flex flex-col gap-2" style={{ maxHeight: '44vh', overflowY: 'auto' }}>
+          {(loading || searchLoading) && (
             <div className="flex justify-center py-8 text-on-surface-variant text-sm">
-              Shuffling…
+              {searchLoading ? 'Searching…' : 'Shuffling…'}
             </div>
           )}
-          {!loading && shuffle && Object.entries(shuffle).map(([cat, item]) => (
+
+          {/* Search results */}
+          {!searchLoading && searchResults && (
+            <>
+              <p className="text-xs text-on-surface-variant italic px-1">
+                Top {searchResults.length} matches for "{searchQuery}" — loaded onto wheel
+              </p>
+              {searchResults.map((wedge) => (
+                <ElementChip
+                  key={wedge.id}
+                  category={wedge.category}
+                  item={{ label: wedge.full_label, metadata: wedge.metadata }}
+                />
+              ))}
+            </>
+          )}
+
+          {/* Default shuffle results */}
+          {!loading && !searchResults && shuffle && Object.entries(shuffle).map(([cat, item]) => (
             <ElementChip key={cat} category={cat} item={item} />
           ))}
         </div>
 
-        {/* Reshuffle */}
-        <div className="px-4 pb-6 pt-2 border-t border-outline-variant">
-          <button
-            onClick={fetchBoth}
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full bg-tertiary text-on-tertiary text-sm font-bold uppercase tracking-wider mode-transition hover:opacity-90 disabled:opacity-50"
-            style={{ fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.1em' }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>shuffle</span>
-            {loading ? 'Shuffling…' : 'Reshuffle'}
-          </button>
-        </div>
+        {/* Reshuffle — hidden when showing search results */}
+        {!searchResults && (
+          <div className="px-4 pb-6 pt-2 border-t border-outline-variant">
+            <button
+              onClick={fetchBoth}
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full bg-tertiary text-on-tertiary text-sm font-bold uppercase tracking-wider mode-transition hover:opacity-90 disabled:opacity-50"
+              style={{ fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.1em' }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 16 }}>shuffle</span>
+              {loading ? 'Shuffling…' : 'Reshuffle'}
+            </button>
+          </div>
+        )}
       </div>
     </>
   )
