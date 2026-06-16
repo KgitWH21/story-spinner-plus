@@ -19,8 +19,11 @@ api.interceptors.response.use(
     const original = err.config
     const status = err.response?.status
 
+    // Only refresh Django JWTs — skip for Supabase or other external URLs
+    const isDjangoRequest = !original.url?.includes('supabase.co')
+
     // Retry once on 401/403 after refreshing the access token
-    if ((status === 401 || status === 403) && !original._retried) {
+    if ((status === 401 || status === 403) && !original._retried && isDjangoRequest) {
       original._retried = true
       try {
         if (!refreshing) {
@@ -72,5 +75,11 @@ export const shuffleElements = (categories) => {
 export const getWheelSet = (mode) => api.get(`/api/elements/wheel-set/?mode=${mode}`)
 export const searchElements = (query, mode) =>
   api.get(`/api/elements/search/?q=${encodeURIComponent(query)}&mode=${mode}`)
+
+export const processDonation = (amountInCents) =>
+  api.post(
+    import.meta.env.VITE_SUPABASE_URL + '/functions/v1/process-donation',
+    { amount: amountInCents },
+  )
 
 export default api

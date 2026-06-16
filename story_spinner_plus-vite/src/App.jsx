@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { Routes, Route, Link } from 'react-router-dom'
 import TopAppBar from './components/TopAppBar'
 import ModeToggle from './components/ModeToggle'
 import SpinnerWheel from './components/SpinnerWheel'
@@ -7,6 +8,7 @@ import ShuffleDrawer from './components/ShuffleDrawer'
 import LibraryView from './components/LibraryView'
 import AuthModal from './components/AuthModal'
 import Toast from './components/Toast'
+import DonatePage from './pages/DonatePage'
 import { generateSpin, getMe, getWheelSet } from './api/client'
 import { CATEGORY_LABELS } from './lib/spinElements'
 import { applyModeTokens } from './lib/theme'
@@ -205,17 +207,13 @@ export default function App() {
     setUserEmail('')
   }
 
-  if (view === 'library') {
-    return (
-      <LibraryView
-        onBack={() => { localStorage.setItem('app_view', 'spinner'); setView('spinner') }}
-        userEmail={userEmail}
-        onSignOut={handleSignOut}
-      />
-    )
-  }
-
-  return (
+  const spinnerContent = view === 'library' ? (
+    <LibraryView
+      onBack={() => { localStorage.setItem('app_view', 'spinner'); setView('spinner') }}
+      userEmail={userEmail}
+      onSignOut={handleSignOut}
+    />
+  ) : (
     <div
       className="min-h-screen bg-background text-on-surface flex flex-col"
       style={{ fontFamily: "'Hanken Grotesk', sans-serif" }}
@@ -227,6 +225,16 @@ export default function App() {
         onSignIn={() => setShowAuthModal(true)}
         onSignOut={handleSignOut}
       />
+
+      <div className="flex justify-center pt-1 pb-0">
+        <Link
+          to="/donate"
+          className="text-xs px-3 py-1 rounded-full border border-amber-500/50 text-amber-400 hover:bg-amber-500/10 transition-colors"
+          style={{ fontFamily: "'Hanken Grotesk', sans-serif" }}
+        >
+          Support the app
+        </Link>
+      </div>
 
       <main className="flex flex-col items-center flex-1 pb-4">
         <ModeToggle mode={mode} onModeChange={handleModeChange} />
@@ -295,5 +303,12 @@ export default function App() {
         />
       )}
     </div>
+  )
+
+  return (
+    <Routes>
+      <Route path="/donate" element={<DonatePage />} />
+      <Route path="/*" element={spinnerContent} />
+    </Routes>
   )
 }
